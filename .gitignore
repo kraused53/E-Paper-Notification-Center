@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Icons folder
+icons/
+
+# File containing API secrets
+SECRETS.py
