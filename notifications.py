@@ -6,22 +6,105 @@ from datetime import datetime
 
 icon_dir = '/home/pi/Documents/projects/python/E-Paper/E-Paper-Notification-Center/E-Paper-Notification-Center/icons/'
 
-if __name__ == '__main__':
-	display = InkyWHAT("red")
-	display.set_border(display.WHITE)
 
-	img = Image.new('RGBA', (400, 300), (255, 255, 255))
-	icon = Image.open('./icons/thunderstorm.png').convert('RGBA')
-
-	pixels = icon.load()
+def convert_icon_background(icon):
+	pix = icon.load()
 
 	if icon.mode == 'RGBA':
 		for y in range(icon.size[1]):
 			for x in range(icon.size[0]):
-				if pixels[x, y][3] < 255:
-					pixels[x, y] = (255, 255, 255, 255)
+				if pix[x, y][3] < 255:
+					pix[x, y] = (255, 255, 255, 255)
 
-	img.paste(icon, (0, 0))
+	return pix
+
+
+# Runs when notifications.py is run as main
+if __name__ == '__main__':
+	display = InkyWHAT("red")
+	display.set_border(display.WHITE)
+
+	'''
+		Gather location and weather data
+	'''
+	# Use current IP address to get rough location
+	loc = get_location()
+	# OpenWeatherAPI to get weather forecast for found location
+	weather_data = get_current_weather(loc[1])
+
+	'''
+		Process Weather Data
+	'''
+	# Extract current temp
+	if 'main' in weather_data:
+		if 'temp' in weather_data['main']:
+			cur_temp = str(weather_data['main']['temp']) + ' °F'
+		else:
+			cur_temp = 'ERR'
+	else:
+		cur_temp = 'ERR'
+
+	'''
+		Set up background and image manipulation classes
+	'''
+	# Create Empty Image to display to E-Paper
+	img = Image.new('RGBA', (400, 300), (255, 255, 255))
+	# Create ImageDraw Class to draw / write on img
+	draw = ImageDraw.Draw(img)
+	# Create font for future text objects
+	font = ImageFont.truetype("DejaVuSans.ttf", 16)
+
+	'''
+		Open, process and paste a weather icon
+	'''
+	# Open Random Weather Icon
+	icon = Image.open(icon_dir+'thunderstorm.png').convert('RGBA')
+	# Remove transparent background from icon
+	pixels = convert_icon_background(icon)
+	# Paste Weather Icon onto image
+	img.paste(icon, (0, 50))
+
+	'''
+		Open, process and paste location icon
+	'''
+	# Open location icon
+	icon = Image.open(icon_dir+'location.png').convert('RGBA')
+	# Scale icon to fit
+	icon = icon.resize((20, 20))
+	# Remove transparent background from icon
+	pixels = convert_icon_background(icon)
+	# Paste location icon
+	Image.Image.paste(img, icon, (0, 0))
+
+	'''
+		Create and place title (Location and time)
+	'''
+	# Extract city name
+	city_name = loc[0]
+	# Generate time
+	cur_time = (datetime.now()).strftime("%I:%M %p")
+	# Get time string width
+	w, h = font.getsize(cur_time)
+	# Calculate Time starting x-position
+	x = (display.WIDTH - w)
+	# Place city Name
+	draw.text((22, 2), city_name, display.RED, font)
+	# Place Time
+	draw.text((x, 2), cur_time, display.RED, font)
+
+	'''
+		Place current temperature
+	'''
+	# Change font size
+	font = ImageFont.truetype("DejaVuSans.ttf", 24)
+	# Place current temp
+	draw.text((120, 75), cur_temp, display.BLACK, font)
+
+	'''
+		Aesthetic lines for clarity
+	'''
+	# Draw line to isolate title line
+	draw.line([(0, 22), (display.WIDTH, 22)], fill=(0, 0, 0))
 
 	pal_img = Image.new('P', (1, 1))
 	pal_img.putpalette((255, 255, 255, 0, 0, 0, 255, 0, 0) + (0, 0, 0) * 252)
@@ -30,63 +113,3 @@ if __name__ == '__main__':
 
 	display.set_image(img)
 	display.show()
-'''
-	# Load test icon
-	icon = Image.open(icon_dir+'thunderstorm.png')
-	#img = Image.open(icon_dir+'background.png')
-	img = Image.new('RGBA', (400, 300), (255, 255, 255))
-
-	draw = ImageDraw.Draw(img)
-
-	Image.Image.paste(img, icon, (0, 50))
-
-	font = ImageFont.truetype("DejaVuSans.ttf", 16)
-
-	loc = get_location()
-
-#	weather_data = get_current_weather(loc[1])
-#	print(weather_data)
-	weather_data = []
-	# Extract current temp
-	if 'main' in weather_data:
-		if 'temp' in weather_data['main']:
-			temp = str(weather_data['main']['temp']) + ' °F'
-		else:
-			temp = 'ERR'
-	else:
-			temp = 'ERR'
-
-#	img.save('test.png')
-	font = ImageFont.truetype("DejaVuSans.ttf", 24)
-	draw.text((130, 75), temp, display.BLACK, font)
-
-	message = loc[0]
-
-	cur_time = (datetime.now()).strftime("%I:%M %p")
-
-	w, h = font.getsize(cur_time)
-
-	draw.line([(0, 22), (display.WIDTH, 22)], fill=(0, 0, 0))
-	x = (display.WIDTH - w)
-
-	font = ImageFont.truetype("DejaVuSans.ttf", 16)
-
-	draw.text((22, 2), message, display.RED, font)
-	draw.text((x, 2), cur_time, display.RED, font)
-
-	# Location Icon
-	icon = Image.open('/home/pi/Documents/projects/python/E-Paper/E-Paper-Notification-Center/E-Paper-Notification-Center/icons/location.png', mode='r').convert('P')
-	icon = icon.resize((20, 20))
-	Image.Image.paste(img, icon, (0, 0))
-
-#	img.show()
-
-	pal_img = Image.new('P', (1, 1))
-	pal_img.putpalette((255, 255, 255, 0, 0, 0, 255, 0, 0) + (0, 0, 0)*252)
-
-	img.convert('RGB').quantize(palette=pal_img)
-	display.set_image(img)
-	display.show()
-
-
-'''
