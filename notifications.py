@@ -35,14 +35,30 @@ if __name__ == '__main__':
 	'''
 		Process Weather Data
 	'''
-	# Extract current temp
+	# Check that current weather is available
 	if 'main' in weather_data:
+		# Extract temperature data
 		if 'temp' in weather_data['main']:
 			cur_temp = str(weather_data['main']['temp']) + ' °F'
 		else:
 			cur_temp = 'ERR'
+
+		# Extract air pressure data
+		if 'pressure' in weather_data['main']:
+			cur_press = str(weather_data['main']['pressure']) + ' hPa'
+		else:
+			cur_press = 'ERR'
+
+		# Extract humidity data
+		if 'humidity' in weather_data['main']:
+			cur_hum = str(weather_data['main']['humidity']) + '%'
+		else:
+			cur_hum = 'ERR'
 	else:
 		cur_temp = 'ERR'
+		cur_press = 'ERR'
+		cur_hum = 'ERR'
+
 
 	'''
 		Set up background and image manipulation classes
@@ -93,12 +109,17 @@ if __name__ == '__main__':
 	draw.text((x, 2), cur_time, display.RED, font)
 
 	'''
-		Place current temperature
+		Place current weather
 	'''
 	# Change font size
 	font = ImageFont.truetype("DejaVuSans.ttf", 24)
 	# Place current temp
-	draw.text((120, 75), cur_temp, display.BLACK, font)
+	draw.text((130, 50), cur_temp, display.BLACK, font)
+	w, h = font.getsize(cur_temp)
+	# Place current humidity
+	draw.text((130, (50+h+2)), cur_hum, display.BLACK, font)
+	# Place current pressure
+	draw.text((130, (50+h+h+2+2)), cur_press, display.BLACK, font)
 
 	'''
 		Aesthetic lines for clarity
