@@ -7,16 +7,92 @@ from datetime import datetime
 icon_dir = '/home/pi/Documents/projects/python/E-Paper/E-Paper-Notification-Center/E-Paper-Notification-Center/icons/'
 
 
+'''
+	Takes a .PNG PIL object and returns a 
+'''
 def convert_icon_background(icon):
+	# Break image into individual pixels
 	pix = icon.load()
 
+	# If given object is a .PNG file
 	if icon.mode == 'RGBA':
+		# Check every pixel in the image
 		for y in range(icon.size[1]):
 			for x in range(icon.size[0]):
+				# If pixel has a transparency value that is anything other that solid
 				if pix[x, y][3] < 255:
+					# Convert the pixel to a solid white one
 					pix[x, y] = (255, 255, 255, 255)
-
+	# Return the adjusted image pixels
 	return pix
+
+
+'''
+	Takes a current weather dataset and returns a file name for the correct icon
+'''
+def select_icon(weather_data):
+	# If function cannot select the proper file name, function will return None
+	file_name = None
+
+	'''
+		Make sure that ALL data is present BEFORE trying to access it
+		If any data is missing, do not display icon
+	'''
+	# Check for current time
+	if 'dt' in weather_data:
+		# Check for sys data entry, contains sunrise/sunset data
+		if 'sys' in weather_data:
+			# Check for weather id data entry
+			if ('weather' in weather_data):
+				# Extract time stamps
+				dt = int(weather_data['dt'])
+				sr = int(weather_data['sys']['sunrise'])
+				ss = int(weather_data['sys']['sunset'])
+				id = int(weather_data['weather'][0]['id'])
+
+			'''
+				First, check for icons that do not change depending on the time of day
+			'''
+			# Thunderstorm (id=2xx)
+			if id < 300:
+				file_name = '11d@2x.png'
+			# Rain shower (id=3xx)
+			elif id < 400:
+				file_name = '09d@2x.png'
+			# Snow (id=6xx)
+			elif (id >= 600) and (id < 700):
+				file_name = '13d@2x.png'
+			# Fog (id=7xx)
+			elif id < 800:
+				file_name = '50d@2x.png'
+			elif (id == 803) or (id == 804):
+				file_name = '04d@2x.png'
+			#check for time-dependant icons
+			# Daytime
+			elif (dt > sr) and (dt < ss):
+				# Clear (id=800)
+				if id == 800:
+					file_name = '01d@2x.png'
+				# Few Clouds
+				elif id == 801:
+					file_name = '02d@2x.png'
+				# Scattered Clouds
+				elif id == 802:
+					file_name = '02d@2x.png'
+			# Nighttime
+			else:
+				# Clear (id=800)
+				if id == 800:
+					file_name = '01n@2x.png'
+				# Few Clouds
+				elif id == 801:
+					file_name = '02n@2x.png'
+				# Scattered Clouds
+				elif id == 802:
+					file_name = '03n@2x.png'
+
+	# Return file name
+	return file_name
 
 
 # Runs when notifications.py is run as main
@@ -39,26 +115,52 @@ if __name__ == '__main__':
 	if 'main' in weather_data:
 		# Extract temperature data
 		if 'temp' in weather_data['main']:
-			cur_temp = str(weather_data['main']['temp']) + ' °F'
+			cur_temp = str(weather_data['main']['temp'])
 		else:
-			cur_temp = 'ERR'
+			cur_temp = 'N/A'
 
 		# Extract air pressure data
 		if 'pressure' in weather_data['main']:
-			cur_press = str(weather_data['main']['pressure']) + ' hPa'
+			cur_press = str(weather_data['main']['pressure'])
 		else:
-			cur_press = 'ERR'
+			cur_press = 'N/A'
 
 		# Extract humidity data
 		if 'humidity' in weather_data['main']:
-			cur_hum = str(weather_data['main']['humidity']) + '%'
+			cur_hum = str(weather_data['main']['humidity'])
 		else:
-			cur_hum = 'ERR'
+			cur_hum = 'N/A'
 	else:
 		cur_temp = 'ERR'
 		cur_press = 'ERR'
 		cur_hum = 'ERR'
 
+	# Extract Cloud Cover
+	if 'clouds' in weather_data:
+		cur_clouds = str(weather_data['clouds']['all'])
+	else:
+		cur_clouds = 'N/A'
+	# Extract Visibility
+	if 'visibility' in weather_data:
+		cur_vis = str(weather_data['visibility'])
+	else:
+		cur_vis = 'N/A'
+	# Extract Wind Speed
+	if 'wind' in weather_data:
+		cur_ws = str(weather_data['wind']['speed'])
+	else:
+		cur_ws = 'N/A'
+
+	# Create and format weather information block
+	data_block = '''{0} °F air temperature
+{1}% humidity
+{2} hPa air pressure
+{3}% cloud cover
+{4}m visibility
+{5}mph winds'''.format(cur_temp, cur_hum, cur_press, cur_clouds, cur_vis, cur_ws)
+
+	# Select icon to display
+	icon_name = select_icon(weather_data)
 
 	'''
 		Set up background and image manipulation classes
@@ -73,12 +175,14 @@ if __name__ == '__main__':
 	'''
 		Open, process and paste a weather icon
 	'''
-	# Open Random Weather Icon
-	icon = Image.open(icon_dir+'thunderstorm.png').convert('RGBA')
-	# Remove transparent background from icon
-	pixels = convert_icon_background(icon)
-	# Paste Weather Icon onto image
-	img.paste(icon, (0, 50))
+	# If an icon was selected earlier
+	if icon_name is not None:
+		# Open Random Weather Icon
+		icon = Image.open(icon_dir+icon_name).convert('RGBA')
+		# Remove transparent background from icon
+		pixels = convert_icon_background(icon)
+		# Paste Weather Icon onto image
+		img.paste(icon, (0, 50))
 
 	'''
 		Open, process and paste location icon
@@ -112,14 +216,16 @@ if __name__ == '__main__':
 		Place current weather
 	'''
 	# Change font size
-	font = ImageFont.truetype("DejaVuSans.ttf", 24)
+#	font = ImageFont.truetype("DejaVuSans.ttf", 24)
 	# Place current temp
-	draw.text((130, 50), cur_temp, display.BLACK, font)
-	w, h = font.getsize(cur_temp)
+#	draw.text((130, 50), cur_temp, display.BLACK, font)
+#	w, h = font.getsize(cur_temp)
 	# Place current humidity
-	draw.text((130, (50+h+2)), cur_hum, display.BLACK, font)
+#	draw.text((130, (50+h+2)), cur_hum, display.BLACK, font)
 	# Place current pressure
-	draw.text((130, (50+h+h+2+2)), cur_press, display.BLACK, font)
+#	draw.text((130, (50+h+h+2+2)), cur_press, display.BLACK, font)
+	# Place data block
+	draw.text((130, 50), data_block, display.BLACK, font)
 
 	'''
 		Aesthetic lines for clarity
