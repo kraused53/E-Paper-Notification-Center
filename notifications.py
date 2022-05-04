@@ -1,4 +1,4 @@
-from location import get_location
+\from location import get_location
 from openweather import get_current_weather
 from PIL import Image, ImageFont, ImageDraw
 from inky import InkyWHAT
@@ -8,7 +8,7 @@ icon_dir = '/home/pi/Documents/projects/python/E-Paper/E-Paper-Notification-Cent
 
 
 '''
-	Takes a .PNG PIL object and returns a 
+	Takes a .PNG PIL object and returns the image with all transparent pixels filled in
 '''
 def convert_icon_background(icon):
 	# Break image into individual pixels
@@ -54,19 +54,29 @@ def select_icon(weather_data):
 				First, check for icons that do not change depending on the time of day
 			'''
 			# Thunderstorm (id=2xx)
-			if id < 300:
+			if (id >= 200) and (id < 300):
 				file_name = '11d@2x.png'
-			# Rain shower (id=3xx)
-			elif id < 400:
+			# Drizzle (id=3xx)
+			elif (id >= 300) and (id < 400):
+				file_name = '09d@2x.png'
+			# Freezing rain (id == 511)
+			elif id == 511:
+				file_name = '13d@2x.png'
+			# Rain Showers
+			elif (id > 511) and (id < 600):
 				file_name = '09d@2x.png'
 			# Snow (id=6xx)
 			elif (id >= 600) and (id < 700):
-				file_name = '13d@2x.png'
+				file_name = '13n@2x.png'
 			# Fog (id=7xx)
-			elif id < 800:
+			elif (id >= 700) and (id < 800):
 				file_name = '50d@2x.png'
+			# Scattered Clouds
+			elif id == 802:
+				file_name = '03d@2x.png'
+			# Mostly Clouds
 			elif (id == 803) or (id == 804):
-				file_name = '04d@2x.png'
+				file_name = '04n@2x.png'
 			#check for time-dependant icons
 			# Daytime
 			elif (dt > sr) and (dt < ss):
@@ -76,9 +86,9 @@ def select_icon(weather_data):
 				# Few Clouds
 				elif id == 801:
 					file_name = '02d@2x.png'
-				# Scattered Clouds
-				elif id == 802:
-					file_name = '02d@2x.png'
+				# Rain
+				else:
+					file_name = '10d@2x.png'
 			# Nighttime
 			else:
 				# Clear (id=800)
@@ -87,9 +97,9 @@ def select_icon(weather_data):
 				# Few Clouds
 				elif id == 801:
 					file_name = '02n@2x.png'
-				# Scattered Clouds
-				elif id == 802:
-					file_name = '03n@2x.png'
+				# Rain
+				else:
+					file_name = '10n@2x.png'
 
 	# Return file name
 	return file_name
@@ -170,7 +180,7 @@ if __name__ == '__main__':
 	# Create ImageDraw Class to draw / write on img
 	draw = ImageDraw.Draw(img)
 	# Create font for future text objects
-	font = ImageFont.truetype("DejaVuSans.ttf", 16)
+	font = ImageFont.truetype("LiberationMono-Regular.ttf", 16)
 
 	'''
 		Open, process and paste a weather icon
@@ -226,6 +236,51 @@ if __name__ == '__main__':
 #	draw.text((130, (50+h+h+2+2)), cur_press, display.BLACK, font)
 	# Place data block
 	draw.text((130, 50), data_block, display.BLACK, font)
+
+
+	'''
+		Check to see if it is Friday or Saturday
+	'''
+	# Get day of week
+	weekday = datetime.today().weekday()
+	# Check for Friday or Saturday
+	if (weekday == 4) or (weekday == 5):
+		# Check for current time
+		if 'dt' in weather_data:
+			# Check for sys data entry, contains sunrise/sunset data
+			if 'sys' in weather_data:
+				# Check for weather id data entry
+				if ('weather' in weather_data):
+					# Extract time stamps
+					dt = int(weather_data['dt'])
+					sr = int(weather_data['sys']['sunrise'])
+					ss = int(weather_data['sys']['sunset'])
+
+					icon = None
+
+					# If Friday and after sunset
+					if (weekday == 4) and (dt >= ss):
+						# Open Shabbat Icon
+						icon = Image.open(icon_dir+'Shabbat.png').convert('RGBA')
+						# Remove transparent background from icon
+						pixels = convert_icon_background(icon)
+					# If Saturday and before sunset
+					elif (weekday == 5) and (dt < ss):
+						# Open Shabbat Icon
+						icon = Image.open(icon_dir+'Shabbat.png').convert('RGBA')
+						# Remove transparent background from icon
+						pixels = convert_icon_background(icon)
+					# If Saturday and less than 2 hours after sunset
+					elif (weekday == 5) and ((dt - ss) <= 3600):
+						# Open Havdalah Icon
+						icon = Image.open(icon_dir+'Havdalah.png').convert('RGBA')
+						# Remove transparent background from icon
+						pixels = convert_icon_background(icon)
+
+					if icon is not None:
+						# Paste Candle Icon
+						Image.Image.paste(img, icon, (display.HEIGHT - 50, 0))
+
 
 	'''
 		Aesthetic lines for clarity
