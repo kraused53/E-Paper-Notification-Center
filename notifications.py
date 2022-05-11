@@ -1,4 +1,4 @@
-\from location import get_location
+from location import get_location
 from openweather import get_current_weather
 from PIL import Image, ImageFont, ImageDraw
 from inky import InkyWHAT
@@ -279,7 +279,7 @@ if __name__ == '__main__':
 
 					if icon is not None:
 						# Paste Candle Icon
-						Image.Image.paste(img, icon, (display.HEIGHT - 50, 0))
+						Image.Image.paste(img, icon, (0, display.HEIGHT - 50))
 
 
 	'''
