@@ -140,6 +140,13 @@ def select_icon(weather_data):
 	return file_name
 
 
+'''
+    Lay out Weekly forecast
+'''
+def weekly_forecast(data, screen):
+    return screen
+
+
 # Runs when notifications.py is run as main
 if __name__ == '__main__':
 	display = InkyWHAT("red")
@@ -175,7 +182,7 @@ if __name__ == '__main__':
 		cur_clouds = str(weather_data.cloud_cover)
 	
 	# Create and format weather information block
-	data_block = '''{0} °F air temperature
+	data_block = '''{0} °F
 {1}% humidity
 {2}% cloud cover'''.format(cur_temp, cur_hum, cur_clouds)
 
@@ -235,17 +242,10 @@ if __name__ == '__main__':
 	'''
 		Place current weather
 	'''
-	# Change font size
-#	font = ImageFont.truetype("DejaVuSans.ttf", 24)
-	# Place current temp
-#	draw.text((130, 50), cur_temp, display.BLACK, font)
-#	w, h = font.getsize(cur_temp)
-	# Place current humidity
-#	draw.text((130, (50+h+2)), cur_hum, display.BLACK, font)
-	# Place current pressure
-#	draw.text((130, (50+h+h+2+2)), cur_press, display.BLACK, font)
 	# Place data block
-	draw.text((130, 50), data_block, display.BLACK, font)
+	font = ImageFont.truetype("LiberationMono-Regular.ttf", 24)
+	draw.text((130, 55), data_block, display.BLACK, font)
+	font = ImageFont.truetype("LiberationMono-Regular.ttf", 16)
 
 
 	'''
@@ -291,6 +291,9 @@ if __name__ == '__main__':
 						# Paste Candle Icon
 						Image.Image.paste(img, icon, (0, display.HEIGHT - 50))
 
+
+    # Add Weekly forecast to screen
+	draw = weekly_forecast(weather_data, draw)
 
 	'''
 		Aesthetic lines for clarity
