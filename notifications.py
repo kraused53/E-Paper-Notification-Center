@@ -8,6 +8,41 @@ icon_dir = '/home/pi/Documents/projects/python/E-Paper/E-Paper-Notification-Cent
 
 
 '''
+    Class to store weather information
+'''
+class WeatherData:
+    def __init__(self, weather_json):
+        # Create variables for current weather data
+        self.air_temperature = None
+        self.humidity = None
+        self.cloud_cover = None
+        self.image = None
+        self.time = None
+        self.sunrise = None
+        self.sunset = None
+        # Create Variables for weekly forecast
+        self.week_min_temps = None
+        self.week_max_temps = None
+        self.week_icons = None
+        
+        # Fill variables
+        if 'current' in weather_json:
+            if 'dt' in weather_json['current']:
+                self.time = int(weather_json['current']['dt'])
+            if 'sunrise' in weather_json['current']:
+                self.sunrise = int(weather_json['current']['sunrise'])
+            if 'sunset' in weather_json['current']:
+                self.sunset = int(weather_json['current']['sunset'])
+            if 'temp' in weather_json['current']:
+                self.air_temperature = str(weather_json['current']['temp'])
+            if 'humidity' in weather_json['current']:
+                self.humidity = int(weather_json['current']['humidity'])
+            if 'clouds' in weather_json['current']:
+                self.cloud_cover = int(weather_json['current']['clouds'])
+            if 'weather' in weather_json['current']:
+                if 'icon' in weather_json['current']['weather'][0]:
+                    self.image = str(weather_json['current']['weather'][0]['icon']) + '@2x.png'
+'''
 	Takes a .PNG PIL object and returns the image with all transparent pixels filled in
 '''
 def convert_icon_background(icon):
@@ -116,61 +151,36 @@ if __name__ == '__main__':
 	# Use current IP address to get rough location
 	loc = get_location()
 	# OpenWeatherAPI to get weather forecast for found location
-	weather_data = get_current_weather(loc[1])
+	weather_data = WeatherData(get_current_weather(loc[1]))
 
 	'''
 		Process Weather Data
 	'''
-	# Check that current weather is available
-	if 'main' in weather_data:
-		# Extract temperature data
-		if 'temp' in weather_data['main']:
-			cur_temp = str(weather_data['main']['temp'])
-		else:
-			cur_temp = 'N/A'
-
-		# Extract air pressure data
-		if 'pressure' in weather_data['main']:
-			cur_press = str(weather_data['main']['pressure'])
-		else:
-			cur_press = 'N/A'
-
-		# Extract humidity data
-		if 'humidity' in weather_data['main']:
-			cur_hum = str(weather_data['main']['humidity'])
-		else:
-			cur_hum = 'N/A'
+	# Extract current temp
+	if weather_data.air_temperature is None:
+		cur_temp = 'N/A'
 	else:
-		cur_temp = 'ERR'
-		cur_press = 'ERR'
-		cur_hum = 'ERR'
+		cur_temp = str(weather_data.air_temperature)
+
+	# Extract humidity data
+	if weather_data.humidity is None:
+		cur_hum = 'N/A'
+	else:
+		cur_hum = str(weather_data.humidity)
 
 	# Extract Cloud Cover
-	if 'clouds' in weather_data:
-		cur_clouds = str(weather_data['clouds']['all'])
-	else:
+	if weather_data.cloud_cover is None:
 		cur_clouds = 'N/A'
-	# Extract Visibility
-	if 'visibility' in weather_data:
-		cur_vis = str(weather_data['visibility'])
 	else:
-		cur_vis = 'N/A'
-	# Extract Wind Speed
-	if 'wind' in weather_data:
-		cur_ws = str(weather_data['wind']['speed'])
-	else:
-		cur_ws = 'N/A'
-
+		cur_clouds = str(weather_data.cloud_cover)
+	
 	# Create and format weather information block
 	data_block = '''{0} °F air temperature
 {1}% humidity
-{2} hPa air pressure
-{3}% cloud cover
-{4}m visibility
-{5}mph winds'''.format(cur_temp, cur_hum, cur_press, cur_clouds, cur_vis, cur_ws)
+{2}% cloud cover'''.format(cur_temp, cur_hum, cur_clouds)
 
 	# Select icon to display
-	icon_name = select_icon(weather_data)
+	icon_name = weather_data.image
 
 	'''
 		Set up background and image manipulation classes
