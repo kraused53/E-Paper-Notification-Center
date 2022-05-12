@@ -255,33 +255,26 @@ if __name__ == '__main__':
 	weekday = datetime.today().weekday()
 	# Check for Friday or Saturday
 	if (weekday == 4) or (weekday == 5):
-		# Check for current time
-		if 'dt' in weather_data:
-			# Check for sys data entry, contains sunrise/sunset data
-			if 'sys' in weather_data:
-				# Check for weather id data entry
-				if ('weather' in weather_data):
-					# Extract time stamps
-					dt = int(weather_data['dt'])
-					sr = int(weather_data['sys']['sunrise'])
-					ss = int(weather_data['sys']['sunset'])
-
+		# Make sure that all necessary info is available
+		if weather_data.time is not None:
+			if weather_data.sunset is not None:
+				if weather_data.sunrise is not None:
 					icon = None
 
 					# If Friday and after sunset
-					if (weekday == 4) and (dt >= ss):
+					if (weekday == 4) and (weather_data.time >= weather_data.sunset):
 						# Open Shabbat Icon
 						icon = Image.open(icon_dir+'Shabbat.png').convert('RGBA')
 						# Remove transparent background from icon
 						pixels = convert_icon_background(icon)
 					# If Saturday and before sunset
-					elif (weekday == 5) and (dt < ss):
+					elif (weekday == 5) and (weather_data.time < weather_data.time):
 						# Open Shabbat Icon
 						icon = Image.open(icon_dir+'Shabbat.png').convert('RGBA')
 						# Remove transparent background from icon
 						pixels = convert_icon_background(icon)
 					# If Saturday and less than 2 hours after sunset
-					elif (weekday == 5) and ((dt - ss) <= 3600):
+					elif (weekday == 5) and ((weather_data.time - weather_data.sunset) <= 3600):
 						# Open Havdalah Icon
 						icon = Image.open(icon_dir+'Havdalah.png').convert('RGBA')
 						# Remove transparent background from icon
@@ -289,7 +282,7 @@ if __name__ == '__main__':
 
 					if icon is not None:
 						# Paste Candle Icon
-						Image.Image.paste(img, icon, (0, display.HEIGHT - 50))
+						Image.Image.paste(img, icon, (display.WIDTH-50, 50))
 
 
     # Add Weekly forecast to screen
