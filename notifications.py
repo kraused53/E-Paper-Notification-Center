@@ -268,7 +268,7 @@ if __name__ == '__main__':
 						# Remove transparent background from icon
 						pixels = convert_icon_background(icon)
 					# If Saturday and before sunset
-					elif (weekday == 5) and (weather_data.time < weather_data.time):
+					elif (weekday == 5) and (weather_data.time < weather_data.sunset):
 						# Open Shabbat Icon
 						icon = Image.open(icon_dir+'Shabbat.png').convert('RGBA')
 						# Remove transparent background from icon
