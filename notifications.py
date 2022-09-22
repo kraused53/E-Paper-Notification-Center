@@ -299,5 +299,7 @@ if __name__ == '__main__':
 
 	img = img.convert('RGB').quantize(palette=pal_img)
 
+	img = img.rotate(180, expand = False)
+
 	display.set_image(img)
 	display.show()
